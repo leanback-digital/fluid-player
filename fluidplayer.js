@@ -862,7 +862,7 @@ var fluidPlayerClass = {
                     document.getElementById(player.videoPlayerId).dispatchEvent(event);
 
                     // bind so that "this"== player in the called function
-                    player.displayOptions.vastOptions.vastAdvanced.vastLoadedCallback.bind(player).call();
+                    player.displayOptions.vastOptions.vastAdvanced.vastLoadedCallback.call(player);
 
                     if (player.hasTitle()) {
                       var title = document.getElementById(player.videoPlayerId + '_title');
@@ -1085,7 +1085,7 @@ var fluidPlayerClass = {
                 videoPlayerTag.play();
 
                 //Announce the impressions
-                player.trackSingleEvent('impression');
+                player.trackSingleEvent(adListId, 'impression');
 
                 videoPlayerTag.removeEventListener('loadedmetadata', player.switchPlayerToVastMode);
             };
@@ -1123,7 +1123,7 @@ var fluidPlayerClass = {
 
             var currentTime = Math.floor(videoPlayerTag.currentTime);
             if (player.vastOptions.duration != 0) {
-                player.scheduleTrackingEvent(currentTime, player.vastOptions.duration);
+                player.scheduleTrackingEvent(adListId, currentTime, player.vastOptions.duration);
             }
 
             if (currentTime >= (player.vastOptions.duration - 1 ) && player.vastOptions.duration != 0) {
@@ -1137,10 +1137,10 @@ var fluidPlayerClass = {
         videoPlayerTag.addEventListener('timeupdate', videoPlayerTimeUpdate);
     },
 
-    scheduleTrackingEvent : function(currentTime, duration) {
+    scheduleTrackingEvent : function(adListId, currentTime, duration) {
         var player = this;
         if (currentTime == 0) {
-            player.trackSingleEvent('start');
+            player.trackSingleEvent(adListId, 'start');
         }
 
         if (
@@ -1148,32 +1148,35 @@ var fluidPlayerClass = {
             (player.vastOptions.tracking['progress'].length) &&
             (typeof player.vastOptions.tracking['progress'][currentTime] !== 'undefined')
         ) {
-            player.trackSingleEvent('progress', currentTime);
+            player.trackSingleEvent(adListId, 'progress', currentTime);
         }
 
         if (currentTime == (Math.floor(duration / 4))) {
-            player.trackSingleEvent('firstQuartile');
+            player.trackSingleEvent(adListId, 'firstQuartile');
         }
 
         if (currentTime == (Math.floor(duration / 2))) {
-            player.trackSingleEvent('midpoint');
+            player.trackSingleEvent(adListId, 'midpoint');
         }
 
         if (currentTime == (Math.floor(duration * 3 / 4))) {
-            player.trackSingleEvent('thirdQuartile');
+            player.trackSingleEvent(adListId, 'thirdQuartile');
         }
 
         if (currentTime >= (duration - 1 )) {
-            player.trackSingleEvent('complete');
+            player.trackSingleEvent(adListId, 'complete');
         }
     },
 
-    trackSingleEvent : function(eventType, eventSubType) {
+    trackSingleEvent : function(adListId, eventType, eventSubType) {
         var player = this;
 
         if (typeof player.vastOptions === 'undefined' || player.vastOptions === null) {
             return;
         }
+
+
+        player.displayOptions.vastOptions.vastAdvanced.onAdEvent.call(player, adListId, eventType, eventSubType);
 
         var trackingUris = [];
         trackingUris.length = 0;
@@ -1230,7 +1233,7 @@ var fluidPlayerClass = {
         player.closeNonLinear(adListId);
         if(player.adFinished == false) {
             player.adFinished = true;
-            player.trackSingleEvent('complete');
+            player.trackSingleEvent(adListId, 'complete');
         }
         clearInterval(player.nonLinearTracking);
     },
@@ -1253,7 +1256,7 @@ var fluidPlayerClass = {
         player.createBoard(adListId);
 
         player.adFinished = false;
-        player.trackSingleEvent('start');
+        player.trackSingleEvent(adListId, 'start');
 
         var duration = (player.adList[adListId].nonLinearDuration) ? player.adList[adListId].nonLinearDuration : player.vastOptions.duration;
 
@@ -1262,7 +1265,7 @@ var fluidPlayerClass = {
             if (player.adFinished !== true) {
 
                 var currentTime = Math.floor(videoPlayerTag.currentTime);
-                player.scheduleTrackingEvent(currentTime, duration);
+                player.scheduleTrackingEvent(adListId, currentTime, duration);
 
                 if (currentTime >= (duration - 1 )) {
                     player.adFinished = true;
@@ -1332,7 +1335,7 @@ var fluidPlayerClass = {
             img.width = newBannerWidth;
             img.height = newBannerHeight;
 
-            player.trackSingleEvent('impression');
+            player.trackSingleEvent(adListId, 'impression');
         };
 
         board.id = 'fluid_nonLinear_' + adListId;
@@ -1559,7 +1562,7 @@ var fluidPlayerClass = {
         }
 
         player.vastOptions = player.adPool[adListId];
-        player.trackSingleEvent(status);
+        player.trackSingleEvent(adListId, status);
     },
 
 
@@ -4564,6 +4567,7 @@ var fluidPlayerClass = {
                 }
             },
             vastOptions: {
+                switchToMainVideo:            true,
                 adList:                       {},
                 skipButtonCaption:            'Skip ad in [seconds]',
                 skipButtonClickCaption:       'Skip Ad <span class="skip_button_icon"></span>',
@@ -4578,6 +4582,7 @@ var fluidPlayerClass = {
                 maxAllowedVastTagRedirects:   3,
 
                 vastAdvanced: {
+                    onAdEvent:                (function() {}),
                     vastLoadedCallback:       (function() {}),
                     noVastVideoCallback:      (function() {}),
                     vastVideoSkippedCallback: (function() {}),
