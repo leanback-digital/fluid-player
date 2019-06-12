@@ -1,0 +1,130 @@
+<html>
+   <head>
+      <title>Fluid Player</title>
+      <link rel="stylesheet" href="fluidplayer.min.css" type="text/css"/>
+      <script src="fluidplayer.js"></script>
+   </head>
+   <body>
+      <video id='my-video' controls style="width: 640px; height: 360px;">
+        <!--
+         <source src='https://storage.googleapis.com/gvabox/media/samples/stock.mp4' type='video/mp4' />
+         -->
+      </video>
+
+<script type="text/javascript">
+
+LEANBACK={DIGITAL:{}};
+
+LEANBACK.DIGITAL.AutoPlay= class AutoPlay {
+  constructor(audioFile){
+    this.withSound    = false;
+    this.withOutSound = false;
+    this.audioFile = audioFile;
+  }
+  test(){
+    const audio =  new Audio(this.audioFile);
+    this.p1 = audio.play().then( () => this.withSound=true)
+      .catch( ()=>{
+        audio.muted=true;
+        this.p2 = audio.play().then( () => this.withOutSound=true)
+        .catch( ()=>this.withOutSound)
+      })
+  }
+  async async_allowed(){
+    await this.p1
+    await this.p2
+    return this.allowed()
+  }
+  allowed(){return this.withSound || this.withOutSound}
+}
+
+LEANBACK.DIGITAL.init = async function(){
+  this.autoPlay = new this.AutoPlay("silence.mp3");
+  this.autoPlay.test() // doesn't wait
+  var allowed = await this.autoPlay.async_allowed();
+  if(allowed){
+    console.log(this.autoPlay.withOutSound);
+    const volume = (this.autoPlay.withOutSound)?  0 : 1;
+    console.log('volume',volume)
+    this.player.setVolume(volume)
+    this.player.play();
+  };
+};
+
+
+// TODO: fix this horrible code!
+LEANBACK.DIGITAL.volume = {
+  store: function(){
+    var volume =  document.getElementById(LEANBACK.DIGITAL.player.videoPlayerId).volume;
+    LEANBACK.DIGITAL.storedVolume = volume;
+    console.log('storedVolume', LEANBACK.DIGITAL.storedVolume);
+  },
+  restore: function(){ LEANBACK.DIGITAL.player.setVolume(LEANBACK.DIGITAL.storedVolume);}
+};
+
+
+
+LEANBACK.DIGITAL.player = fluidPlayer(
+  'my-video',
+  {
+    layoutControls: {
+        // Parameters to customise the look and feel of the player
+    },
+    vastOptions: {
+      switchToMainVideo:false,          // *** new option!
+      adList:  [
+          {
+              withCredentials: false,   // *** new option!
+              roll: 'preRoll',
+              vastTag: 'https://storage.googleapis.com/vast-samples/vast3-6x.xml',
+              adText: 'Advertising supports us directly',
+              extra:  'some extra string for logging, etc'  /// extra shit, not used yet...
+          }
+      ],
+      skipButtonCaption:          'Skip ad in [seconds]',
+      skipButtonClickCaption:     'Skip ad <span class="skip_button_icon"></span>',
+      adText:                     null,
+      adTextPosition:             'top left',
+      adCTAText:                  'Visit now!',
+      adCTATextPosition:          'bottom right',
+      vastTimeout:                5000,
+      maxAllowedVastTagRedirects: 4,
+
+      vastAdvanced: {
+          onAdEvent:                (function(adListId, eventType, eventSubType) {onAdEvent(this, adListId, eventType, eventSubType) }),
+          vastLoadedCallback:       (function() {console.log("vastLoadedCallback"),console.log(this)}),
+          noVastVideoCallback:      (function() {}),
+          vastVideoSkippedCallback: (function() {}),
+          vastVideoEndedCallback:   (function() {})
+      }
+    }
+  }
+);
+
+function onAdEvent(player, adListId, eventType, eventSubType){
+  console.log("onAdEvent", adListId, eventType, eventSubType)
+  switch (eventType) {
+      case 'start':
+      case 'firstQuartile':
+      case 'midpoint':
+      case 'thirdQuartile':
+      case 'complete':
+        //LEANBACK.DIGITAL.volume.restore();
+          break;
+      case 'progress':
+      // eventSubType is the TIME
+      case 'impression':
+          break;
+
+      default:
+          break;
+  }
+}
+
+//LEANBACK.DIGITAL.volume.store();
+LEANBACK.DIGITAL.init();  // does auto play
+
+
+</script>
+   </body>
+</html>
