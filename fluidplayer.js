@@ -861,7 +861,8 @@ var fluidPlayerClass = {
                     event.initEvent('adId_' + adListId, false, true);
                     document.getElementById(player.videoPlayerId).dispatchEvent(event);
 
-                    player.displayOptions.vastOptions.vastAdvanced.vastLoadedCallback();
+                    // bind so that "this"== player in the called function
+                    player.displayOptions.vastOptions.vastAdvanced.vastLoadedCallback.bind(player).call();
 
                     if (player.hasTitle()) {
                       var title = document.getElementById(player.videoPlayerId + '_title');
@@ -974,9 +975,13 @@ var fluidPlayerClass = {
 
         if (numberOfRedirects <= player.displayOptions.vastOptions.maxAllowedVastTagRedirects) {
 
+            var withCredentials = player.adList[adListId].withCredentials;
+
+            console.log("vastTag", vastTag)
+
             player.sendRequest(
                 vastTag,
-                true,
+                withCredentials,
                 player.displayOptions.vastOptions.vastTimeout,
                 handleXmlHttpReq
             );
@@ -1698,9 +1703,11 @@ var fluidPlayerClass = {
     onVastAdEnded: function() {
         //"this" is the HTML5 video tag, because it disptches the "ended" event
         var player = fluidPlayerClass.getInstanceById(this.id);
+        if (player.displayOptions.vastOptions.switchToMainVideo){
         player.switchToMainVideo();
         player.vastOptions = null;
         player.adFinished = true;
+      }
     },
 
     onMainVideoEnded: function () {
@@ -3764,10 +3771,10 @@ var fluidPlayerClass = {
         var videoPlayerInstance = fluidPlayerClass.getInstanceById(videoInstanceId);
         var videoPlayerTag = document.getElementById(videoInstanceId);
         var titleHolder = document.getElementById(videoPlayerInstance.videoPlayerId + '_title');
-        
+
         if (videoPlayerInstance.hasTitle()) {
           titleHolder.classList.add('fade_out');
-        }  
+        }
     },
 
     showTitle: function() {
@@ -3778,7 +3785,7 @@ var fluidPlayerClass = {
 
         if (videoPlayerInstance.hasTitle()) {
           titleHolder.classList.remove('fade_out');
-        }  
+        }
     },
 
     initLogo: function() {
