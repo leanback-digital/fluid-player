@@ -1122,11 +1122,16 @@ var fluidPlayerClass = {
             }
 
             var currentTime = Math.floor(videoPlayerTag.currentTime);
+
+            var duration = player.getCurrentVideoDuration() || player.vastOptions.duration
+
             if (player.vastOptions.duration != 0) {
-                player.scheduleTrackingEvent(adListId, currentTime, player.vastOptions.duration);
+                player.scheduleTrackingEvent(adListId, currentTime, duration);
             }
 
-            if (currentTime >= (player.vastOptions.duration - 1 ) && player.vastOptions.duration != 0) {
+
+
+            if (currentTime >= (duration - 1 ) && duration != 0) {
                 videoPlayerTag.removeEventListener('timeupdate', videoPlayerTimeUpdate);
                 player.adFinished = true;
             }
