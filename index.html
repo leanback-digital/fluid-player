@@ -5,7 +5,7 @@
       <script src="fluidplayer.js"></script>
    </head>
    <body>
-      <video id='my-video' controls style="width: 640px; height: 360px;">
+      <video id='my-video' controls playsinline style="width: 640px; height: 360px;">
         <!--
          <source src='https://storage.googleapis.com/gvabox/media/samples/stock.mp4' type='video/mp4' />
          -->
@@ -44,9 +44,12 @@ LEANBACK.DIGITAL.init = async function(){
   var allowed = await this.autoPlay.async_allowed();
   if(allowed){
     console.log(this.autoPlay.withOutSound);
-    const volume = (this.autoPlay.withOutSound)?  0 : 1;
-    console.log('volume',volume)
-    this.player.setVolume(volume)
+    if (this.autoPlay.withOutSound){
+    //  this.player.setVolume(0);
+      const playerEl = document.getElementById(LEANBACK.DIGITAL.player.videoPlayerId);
+      playerEl.volume=0;
+      playerEl.muted=true;
+    };
     this.player.play();
   };
 };

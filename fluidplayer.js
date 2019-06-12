@@ -1129,8 +1129,6 @@ var fluidPlayerClass = {
                 player.scheduleTrackingEvent(adListId, currentTime, duration);
             }
 
-
-
             if (currentTime >= (duration - 1 ) && duration != 0) {
                 videoPlayerTag.removeEventListener('timeupdate', videoPlayerTimeUpdate);
                 player.adFinished = true;
