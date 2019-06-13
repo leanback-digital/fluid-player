@@ -104,7 +104,7 @@ var fluidPlayerClass = {
     vttParserScript: '/scripts/webvtt.min.js',
     instances: [],
     notCloned: ['notCloned', 'vttParserScript', 'instances', 'getInstanceById',
-        'requestStylesheet', 'reqiestScript', 'isTouchDevice', 'vastOptions',
+        'requestStylesheet', 'requestScript', 'isTouchDevice', 'vastOptions',
         'displayOptions', 'getEventOffsetX', 'getEventOffsetY', 'getTranslateX',
         'toggleElementText', 'getMobileOs', 'findClosestParent', 'activeVideoPlayerId',
         'getInstanceIdByWrapperId', 'timer', 'timerPool', 'adList', 'adPool',
