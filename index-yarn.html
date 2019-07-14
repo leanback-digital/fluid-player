@@ -1,0 +1,193 @@
+<html>
+   <head>
+      <title>Yarn Video Ads</title>
+      <link rel="stylesheet" href="fluidplayer.min.css" type="text/css"/>
+      <script src="fluidplayer.js"></script>
+   </head>
+   <body>
+      <video id='my-video' controls playsinline style="width: 640px; height: 360px;">
+        <!--
+         <source src='https://storage.googleapis.com/gvabox/media/samples/stock.mp4' type='video/mp4' />
+         -->
+      </video>
+
+<script type="text/javascript">
+
+
+/**  EXTERN **/
+
+YARN={};
+
+
+/* AUTO PLAY code
+
+  1. probe browser to current autoPlay status...
+    autoPlay = AutoPlay.new()
+    autoPlay.test()
+
+ 2. is autoplay allowed at all?
+  await autoPlay.async_allowed()  => true / false
+  autoPlay.allowed() => true/false
+
+3. If autoPlay is allowed, what type?
+  autoPlay.withSound  => true/false
+  autoPlay.withOutSound => true/false
+
+4. Result may change if you retest...
+
+5. If you do attempt to autoPlay, mute/unmute sound appropriately or you will get an error from the browser
+
+*/
+
+YARN.AutoPlay= class AutoPlay {
+  constructor(audioFile){
+    const DEFAULT = ["data:audio/mpeg;base64,",
+    "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMAAAAAAAAAAAAAAA//",
+    "tUwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABgADAwMDAwMDAwMDAw",
+    "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA",
+    "//////////////////////////////////////////////////////////////////",
+    "8AAAAATGF2YzU3LjY0AAAAAAAAAAAAAAAAJATgAAAAAAAAAYAbRKz8AAAAAAAAAAAAAAAAAAAA",
+    "//sUxAADwAABpAAAACAAADSAAAAETEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+    "//sUxCWDwAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"].join('');
+    this.withSound    = false;
+    this.withOutSound = false;
+    this.audioFile = audioFile || DEFAULT;
+  }
+  test(){
+    const audio =  new Audio(this.audioFile);
+    this.p1 = audio.play().then( () => this.withSound=true)
+      .catch( ()=>{
+        audio.muted=true;
+        this.p2 = audio.play().then( () => this.withOutSound=true)
+        .catch( ()=>this.withOutSound)
+      })
+  }
+  async async_allowed(){
+    await this.p1
+    await this.p2
+    return this.allowed()
+  }
+  allowed(){return this.withSound || this.withOutSound}
+}
+
+/*
+
+YARN.init
+
+Inits the AdPlay and attempts to autoPlay.
+CAll this function when everything is ready to go!
+Configuration is hard coded in YARN.player
+
+*/
+
+
+
+YARN.init = async function(){
+  this.autoPlay = new this.AutoPlay(YARN.beep);
+  this.autoPlay.test() // doesn't wait
+  var allowed = await this.autoPlay.async_allowed();
+  if(allowed){
+    if (this.autoPlay.withOutSound){
+      const playerEl = document.getElementById(YARN.player.videoPlayerId);
+      playerEl.volume=0;
+      playerEl.muted=true;
+    };
+    this.player.play();
+  };
+};
+
+
+// TODO: fix this horrible code!
+/* Consider storing the current player volume and restoring later...
+YARN.volume = {
+  store: function(){
+    var volume =  document.getElementById(YARN.player.videoPlayerId).volume;
+    YARN.storedVolume = volume;
+    console.log('storedVolume', YARN.storedVolume);
+  },
+  restore: function(){ YARN.player.setVolume(YARN.storedVolume);}
+};
+*/
+
+
+/*
+
+ builds/configures the fluidPlayer instance.
+ Alter as required. Let's try putting the AdText in the middle of the
+ See:
+
+(only works with fork of player in this repo)
+
+*/
+
+YARN.player = fluidPlayer(
+  'my-video',
+  {
+    layoutControls: {
+        // Parameters to customise the look and feel of the player
+    },
+    vastOptions: {
+      switchToMainVideo:false,          // *** new option!
+      adList:  [
+          {
+              withCredentials: false,   // *** new option!
+              roll: 'preRoll',
+              vastTag: 'https://storage.googleapis.com/vast-samples/vast3-6x.xml',
+              adText: 'Advertising supports us directly',
+              extra:  'some extra string for logging, etc'  /// extra shit, not used yet...
+          }
+      ],
+      skipButtonCaption:          'Skip ad in [seconds]',
+      skipButtonClickCaption:     'Skip ad <span class="skip_button_icon"></span>',
+      adText:                     null,
+      adTextPosition:             'top left',
+      adCTAText:                  'Visit now!',
+      adCTATextPosition:          'bottom right',
+      vastTimeout:                5000,
+      maxAllowedVastTagRedirects: 4,
+
+      vastAdvanced: {
+          onAdEvent:                (function(adListId, eventType, eventSubType) {onAdEvent(this, adListId, eventType, eventSubType) }),
+          vastLoadedCallback:       (function() {console.log("vastLoadedCallback"),console.log(this)}),
+          noVastVideoCallback:      (function() {}),
+          vastVideoSkippedCallback: (function() {}),
+          vastVideoEndedCallback:   (function() {})
+      }
+    }
+  }
+);
+
+
+/* optional ad event handlers.
+We might as well remove this stuff (and the call above to them)-- unless we want to retore the volume or hide the player, etc
+*/
+
+function onAdEvent(player, adListId, eventType, eventSubType){
+  console.log("onAdEvent", adListId, eventType, eventSubType)
+  switch (eventType) {
+      case 'start':
+      case 'firstQuartile':
+      case 'midpoint':
+      case 'thirdQuartile':
+      case 'complete':
+        //YARN.volume.restore();
+          break;
+      case 'progress':
+      // eventSubType is the TIME
+      case 'impression':
+          break;
+
+      default:
+          break;
+  }
+}
+
+//YARN.volume.store();
+
+
+YARN.init();  // does auto play
+
+
+</script>
+   </body>
+</html>
